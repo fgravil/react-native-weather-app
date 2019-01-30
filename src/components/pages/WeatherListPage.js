@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, Image, Button, ScrollView } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView } from "react-native";
 import { FlatList } from 'react-native-gesture-handler';
 import { NavigationEvents } from "react-navigation";
 import { TextField } from 'react-native-material-textfield';
@@ -31,7 +31,7 @@ export const WeatherCard = ({ weatherData, Content }) => {
 
     return (<View accessible={true} style={styles.weatherCard}>
         <View accessible={true} style={styles.mainContent}>
-            <View accessible={true} style={{ width: '80%', paddingLeft: 24 }}>
+            <View accessible={true} style={{ width: '75%', paddingLeft: 24 }}>
                 <Text style={styles.temp}>{Math.round(current.temp_f)}&deg;</Text>
 
                 <Text style={styles.location}>
@@ -42,7 +42,7 @@ export const WeatherCard = ({ weatherData, Content }) => {
             </View>
 
             <Image
-                style={{ width: 150, height: 150, justifyContent: 'flex-end' }}
+                style={{ width: 100, height: 100, justifyContent: 'flex-end' }}
                 source={{ uri: `https:${weatherData.current.condition.icon}` }}
             />
         </View>
@@ -63,6 +63,7 @@ export const WeatherList = ({ cities, navigation }) => (
                     <WeatherCard weatherData={item} />
                 </TouchableOpacity>
         }
+        keyExtractor={(item, index) => index.toString()}
     />
 )
 export default class WeatherListPage extends Component {
@@ -75,7 +76,7 @@ export default class WeatherListPage extends Component {
         if (this.state.error) return;
 
         this.props.addCity(this.state.text).then(() => {
-            this.setState({ text: '' });
+            this.setState({ text: '', error: '' });
         }).catch(err => {
             this.setState({ ...this.state, error: err });
         });
@@ -88,7 +89,7 @@ export default class WeatherListPage extends Component {
             <View style={{ paddingBottom: 20 }}>
                 <NavigationEvents
                     onWillFocus={() => {
-                        this.setState({ text: '' })
+                        this.setState({ text: '', error: '' })
                     }}
                 />
                 <View>

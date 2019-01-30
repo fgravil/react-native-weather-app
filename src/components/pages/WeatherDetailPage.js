@@ -22,7 +22,7 @@ const styles = StyleSheet.create({
     },
     mapView: {
         width: '100%',
-        height: '68%'
+        height: '40%'
     },
     map: {
         position: 'absolute',
@@ -59,7 +59,8 @@ export const WeatherDayList = ({ days }) =>
             horizontal={true}
             showsHorizontalScrollIndicator={false}
             data={days}
-            renderItem={({ item }) => <WeatherDay weatherData={item} />}
+            renderItem={({ item }) => <WeatherDay weatherData={item}
+            keyExtractor={(item, index) => index.toString()} />}
         />
     );
 
@@ -85,10 +86,13 @@ export default class WeatherDetailPage extends Component {
                 </View>
 
                 <Button
+                    accessible={true}
+                    accessibilityLabel="Delete City"
                     title="Delete"
                     color="red"
-                    onPress={() => { this.props.removeCity(weatherData.location.name); navigation.pop()}
-                    }
+                    onPress={() => {
+                        this.props.removeCity(weatherData.location.name); navigation.pop()
+                    }}
                 >
                 </Button>
             </View>
