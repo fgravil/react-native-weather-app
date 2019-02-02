@@ -1,5 +1,5 @@
 import { WEATHER_ID, GOOGLE_API_KEY } from '../../../config';
-import { ADD_CITY, REMOVE_CITY, UPDATE_WEATHER } from '../reducers/weatherReducer';
+import { ADD_CITY, REMOVE_CITY, UPDATE_WEATHER, LOADING } from '../reducers/weatherReducer';
 import { store } from '../index';
 
 export const addCity = (city) => (dispatch) => {
@@ -11,10 +11,12 @@ export const addCity = (city) => (dispatch) => {
 
             const desc = location.description.split(',');
 
+            dispatch({ type: LOADING, data: true });
             fetch(`http://api.apixu.com/v1/forecast.json?key=${WEATHER_ID}&q=${desc[0]}&days=7`)
                 .then(async res => {
                     const json = await res.json();
                     dispatch({ type: ADD_CITY, data: json });
+                    dispatch({ type: LOADING, data: false });
                 });
         })
 }
@@ -22,19 +24,21 @@ export const addCity = (city) => (dispatch) => {
 export const updateWeather = () => (dispatch) => {
     const state = { ...store.getState() };
     return Promise.all(state.weather.savedCities.map(item =>
-        fetch(`http://api.apixu.com/v1/forecast.json?key=${WEATHER_ID}&q=${item.location.name}&days=7`)
+        fetch(`http://api.apixu.com/v1/forecast.json?key=${WEATHER_ID}&q=${(item.location || {}).name}&days=7`)
     )).then(values => {
         Promise.all(values.map(v => v.json())).then(jsonValues => {
-            dispatch({UPDATE_WEATHER, data: jsonValues})
+            dispatch({ type: UPDATE_WEATHER, data: jsonValues })
         })
     });
 }
 
 export const getCurrentWeather = (lat, lon) => (dispatch) => {
+    dispatch({ type: LOADING, data: true });
     return fetch(`http://api.apixu.com/v1/forecast.json?key=${WEATHER_ID}&q=${lat},${lon}&days=7`)
         .then(async res => {
             const json = await res.json();
             dispatch({ type: UPDATE_WEATHER, data: json });
+            dispatch({ type: LOADING, data: false });
         });
 }
 

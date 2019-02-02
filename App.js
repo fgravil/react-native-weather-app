@@ -5,16 +5,13 @@ import { PersistGate } from 'redux-persist/es/integration/react';
 import WeatherListContainer from "./src/containers/WeatherListContainer";
 import { createStackNavigator, createAppContainer } from "react-navigation";
 import WeatherDetailContainer from "./src/containers/WeatherDetailContainer";
-import CurrentWeatherContainer from "./src/containers/CurrentWeatherContainer";
+import LoadingComponent from "./src/components/LoadingComponent";
 
 const MainStack = createStackNavigator(
   {
     list: WeatherListContainer,
-    detail: WeatherDetailContainer,
-    current: CurrentWeatherContainer
   },
   {
-    initialRouteName: 'list',
     defaultNavigationOptions: {
       headerStyle: {
         backgroundColor: '#ededed',
@@ -26,14 +23,27 @@ const MainStack = createStackNavigator(
   }
 );
 
-export const AppNavigator = createAppContainer(MainStack);
+const RootStack = createStackNavigator(
+  {
+    main: MainStack,
+    detail: WeatherDetailContainer,
+  },
+  {
+    initialRouteName: 'main',
+    mode: 'modal',
+    headerMode: 'none'
+  }
+);
+
+export const AppNavigator = createAppContainer(RootStack);
 
 
 export default class App extends React.Component {
   render() {
     return (
       <Provider store={store}>
-        <PersistGate persistor={persistor}>
+        <PersistGate loading={<LoadingComponent />} persistor={persistor}>
+
           <AppNavigator />
         </PersistGate>
       </Provider>

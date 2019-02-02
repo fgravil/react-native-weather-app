@@ -1,14 +1,29 @@
 import React, { Component } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView } from "react-native";
+import {
+    View,
+    Text,
+    TouchableOpacity,
+    StyleSheet,
+    Image,
+    ImageBackground,
+    ScrollView,
+    Platform,
+    Keyboard,
+    RefreshControl
+} from "react-native";
 import { FlatList } from 'react-native-gesture-handler';
 import { NavigationEvents } from "react-navigation";
-import { TextField } from 'react-native-material-textfield';
+import Autocomplete from 'react-native-autocomplete-input';
+import { AUTOCOMPLETE_URL } from '../../../config';
+import uuidv1 from 'uuid/v1';
+import LoadingComponent from '../LoadingComponent';
 
+const isAndroid = Platform.OS === 'android';
 export const styles = StyleSheet.create({
     weatherCard: {
-        backgroundColor: '#ff9c00',
         borderColor: '#fff',
-        borderWidth: .5
+        borderWidth: .5,
+        width: '100%',
     },
     mainContent: {
         width: '100%',
@@ -23,37 +38,49 @@ export const styles = StyleSheet.create({
         fontSize: 24,
         paddingLeft: 8,
         color: '#fff'
+    },
+    autocompleteContainer: {
+        flex: 1,
+        left: 0,
+        position: 'absolute',
+        right: 0,
+        top: 0,
+        zIndex: 2,
+        marginBottom: 100
     }
 });
 
 export const WeatherCard = ({ weatherData, Content }) => {
     const { current, location } = weatherData;
 
-    return (<View accessible={true} style={styles.weatherCard}>
-        <View accessible={true} style={styles.mainContent}>
-            <View accessible={true} style={{ width: '75%', paddingLeft: 24 }}>
-                <Text style={styles.temp}>{Math.round(current.temp_f)}&deg;</Text>
+    return (
+        <ImageBackground source={require('./../../../assets/weather.jpg')} style={styles.weatherCard}>
+            <View accessible={true} style={styles.mainContent}>
+                <View accessible={true} style={{ width: '75%', paddingLeft: 24 }}>
+                    <Text style={styles.temp}>{Math.round(current.temp_f)}&deg;</Text>
 
-                <Text style={styles.location}>
-                    <Text style={{ fontWeight: 'bold' }}>{location.name}</Text>
+                    <Text style={styles.location}>
+                        <Text style={{ fontWeight: 'bold' }}>{location.name}</Text>
 
-                    {`${location.region ? ', ' + location.region : ''} ${location.country ? ', ' + location.country : ''}`}
-                </Text>
+                        {`${location.region ? ', ' + location.region : ''} ${location.country ? ', ' + location.country : ''}`}
+                    </Text>
+                </View>
+
+                <Image
+                    style={{ width: 100, height: 100, justifyContent: 'flex-end' }}
+                    source={{ uri: `https:${weatherData.current.condition.icon}` }}
+                />
             </View>
-
-            <Image
-                style={{ width: 100, height: 100, justifyContent: 'flex-end' }}
-                source={{ uri: `https:${weatherData.current.condition.icon}` }}
-            />
-        </View>
-        {Content && <Content />}
-    </View>)
+            {Content && <Content />}
+        </ImageBackground>
+    )
 }
 
 
 export const WeatherList = ({ cities, navigation }) => (
     <FlatList
         data={cities}
+        keyExtractor={(item, index) => uuidv1(index.toString())}
         renderItem={
             ({ item }) =>
                 <TouchableOpacity
@@ -63,53 +90,89 @@ export const WeatherList = ({ cities, navigation }) => (
                     <WeatherCard weatherData={item} />
                 </TouchableOpacity>
         }
-        keyExtractor={(item, index) => index.toString()}
     />
 )
 export default class WeatherListPage extends Component {
+    sessionToken = '';
+
     constructor(props) {
         super(props);
-        this.state = { text: '', error: '' };
+        this.state = { query: '', error: '', cities: [], refreshing: false };
     }
 
-    submit = () => {
-        if (this.state.error) return;
+    componentDidMount() {
+        this.sessionToken = uuidv1();
+    }
 
-        this.props.addCity(this.state.text).then(() => {
-            this.setState({ text: '', error: '' });
+    refresh() {
+        const state = this.state;
+        this.setState({ ...state, refreshing: true });
+        this.props.updateWeather().then(() => this.setState({ ...state, refreshing: false }));
+    }
+
+    autoComplete(newText) {
+        const invalidInput = !/^[A-Za-z\s]{1,}-{0,1}[A-Za-z\s]{1,}$/.test(newText);
+        this.setState({
+            query: newText,
+            error: invalidInput ? 'Invalid city' : '',
+            cities: []
+        });
+
+        if (invalidInput) {
+            return;
+        }
+
+        fetch(AUTOCOMPLETE_URL.replace('{input}', newText).replace('{sessiontoken}', this.sessionToken))
+            .then(async res => {
+                const json = await res.json();
+                const cities = (json.predictions || []).map(val => val.description);
+                this.setState({ ...this.state, cities });
+            })
+    }
+    submit(text) {
+        this.setState({ ...this.state, query: text, cities: [] });
+
+        this.props.addCity(text).then(() => {
+            this.setState({ ...this.state, query: '' });
+            Keyboard.dismiss();
         }).catch(err => {
             this.setState({ ...this.state, error: err });
         });
     }
 
     render() {
-        const { navigation, savedCities } = this.props;
+        const { navigation, savedCities, loading } = this.props;
+        const { query, cities } = this.state;
 
         return (
-            <View style={{ paddingBottom: 20 }}>
+            <View style={{ marginBottom: 20 }}>
                 <NavigationEvents
                     onWillFocus={() => {
                         this.setState({ text: '', error: '' })
                     }}
                 />
-                <View>
-                    <TextField
-                        label="Add New City"
-                        value={this.state.text}
-                        error={this.state.error}
-                        onChangeText={(newText) =>
-                            this.setState({
-                                text: newText,
-                                error: !/^[A-Za-z\s]{1,}-{0,1}[A-Za-z\s]{1,}$/.test(newText)
-                                    ? 'Invalid city' : ''
-                            })
-                        }
-                        onSubmitEditing={this.submit}
-                    >
-                    </TextField>
-                </View>
+                <Autocomplete
+                    placeholder="Add New City"
+                    data={cities}
+                    defaultValue={query}
+                    containerStyle={isAndroid ? styles.autocompleteContainer : { position: 'relative', zIndex: 100 }}
+                    onChangeText={text => this.autoComplete(text)}
+                    renderItem={item => (
+                        <TouchableOpacity onPress={() => this.submit(item)}>
+                            <Text>{item}</Text>
+                        </TouchableOpacity>
+                    )}
+                />
 
-                <ScrollView>
+                {loading && <LoadingComponent />}
+                <ScrollView
+                    style={isAndroid ? { marginTop: 40 } : {}}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={this.state.refreshing}
+                            onRefresh={() => this.refresh()}
+                        />}
+                >
                     <WeatherList cities={savedCities} navigation={navigation} />
                 </ScrollView>
             </View>
