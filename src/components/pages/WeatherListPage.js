@@ -115,7 +115,8 @@ export default class WeatherListPage extends Component {
         this.setState({
             query: newText,
             error: invalidInput ? 'Invalid city' : '',
-            cities: []
+            cities: [],
+            refreshing: false
         });
 
         if (invalidInput) {
@@ -130,13 +131,13 @@ export default class WeatherListPage extends Component {
             })
     }
     submit(text) {
-        this.setState({ ...this.state, query: text, cities: [] });
+        this.setState({ ...this.state, query: text, cities: [], refreshing: true });
 
         this.props.addCity(text).then(() => {
-            this.setState({ ...this.state, query: '' });
+            this.setState({ ...this.state, query: '', refreshing: false });
             Keyboard.dismiss();
         }).catch(err => {
-            this.setState({ ...this.state, error: err });
+            this.setState({ ...this.state, error: err, refreshing: false });
         });
     }
 
@@ -164,7 +165,7 @@ export default class WeatherListPage extends Component {
                     )}
                 />
 
-                {loading && <LoadingComponent />}
+                {/* {loading && <LoadingComponent />} */}
                 <ScrollView
                     style={isAndroid ? { marginTop: 40 } : {}}
                     refreshControl={

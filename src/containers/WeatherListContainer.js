@@ -14,10 +14,10 @@ class WeatherListContainer extends React.Component {
   }
 
   componentDidMount() {
-    if(this.props.currentWeather){
-      return;
-    }
-    this.getLocation();
+    // if(this.props.currentWeather){
+    //   return;
+    // }
+    // this.getLocation();
   }
 
   async getLocation() {

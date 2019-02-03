@@ -17,6 +17,7 @@ export const addCity = (city) => (dispatch) => {
                     const json = await res.json();
                     dispatch({ type: ADD_CITY, data: json });
                     dispatch({ type: LOADING, data: false });
+                    return Promise.resolve(json);
                 });
         })
 }
@@ -28,7 +29,8 @@ export const updateWeather = () => (dispatch) => {
     )).then(values => {
         Promise.all(values.map(v => v.json())).then(jsonValues => {
             dispatch({ type: UPDATE_WEATHER, data: jsonValues })
-        })
+        });
+        return;
     });
 }
 
@@ -39,6 +41,7 @@ export const getCurrentWeather = (lat, lon) => (dispatch) => {
             const json = await res.json();
             dispatch({ type: UPDATE_WEATHER, data: json });
             dispatch({ type: LOADING, data: false });
+            return Promise.resolve(json);
         });
 }
 

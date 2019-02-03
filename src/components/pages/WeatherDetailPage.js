@@ -102,7 +102,7 @@ export default class WeatherDetailPage extends Component {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                    style={{ position: "absolute", right: 50, bottom: 0 }}
+                    style={{ position: "absolute", right: 10, bottom: 0 }}
                     accessible={true}
                     accessibilityLabel="Delete City"
                     onPress={() => {
